@@ -4,10 +4,8 @@
 */
 "use strict";
 
-const parseJson = require("json-parse-better-errors");
-const asyncLib = require("neo-async");
 const path = require("path");
-const {Source} = require("webpack-sources");
+const asyncLib = require("neo-async");// 并行执行异步任务
 const util = require("util");
 const {
 	Tapable,
@@ -16,6 +14,9 @@ const {
 	AsyncParallelHook,
 	AsyncSeriesHook
 } = require("tapable");
+const parseJson = require("json-parse-better-errors");
+const {Source} = require("webpack-sources");
+
 
 const Compilation = require("./Compilation");
 const Stats = require("./Stats");
@@ -31,13 +32,12 @@ const ConcurrentCompilationError = require("./ConcurrentCompilationError");
 /** @typedef {import("../declarations/WebpackOptions").Entry} Entry */
 /** @typedef {import("../declarations/WebpackOptions").WebpackOptions} WebpackOptions */
 
-/**
+/** 编译器类
  * @typedef {Object} CompilationParams
  * @property {NormalModuleFactory} normalModuleFactory
  * @property {ContextModuleFactory} contextModuleFactory
  * @property {Set<string>} compilationDependencies
  */
-//! 
 class Compiler extends Tapable {
 	constructor(context) {
 		super();
@@ -192,9 +192,9 @@ class Compiler extends Tapable {
 		/** @type {boolean} */
 		this.watchMode = false;
 
-		/** @private @type {WeakMap<Source, { sizeOnlySource: SizeOnlySource, writtenTo: Map<string, number> }>} */
+		/** 记录资源在不同目标路径被写入的次数。 @private @type {WeakMap<Source, { sizeOnlySource: SizeOnlySource, writtenTo: Map<string, number> }>} */
 		this._assetEmittingSourceCache = new WeakMap();
-		/** @private @type {Map<string, number>} */
+		/** 目标路径被写入的次数，{targetPath:count} @private @type {Map<string, number>} */
 		this._assetEmittingWrittenFiles = new Map();
 	}
 
@@ -210,62 +210,68 @@ class Compiler extends Tapable {
 	}
 
 	run(callback) {
+		// 如果编译正在进行，抛出错误（一个webpack实例不能同时进行多次编译）
 		if (this.running) return callback(new ConcurrentCompilationError());
-
+		// 定义构建结束回调
 		const finalCallback = (err, stats) => {
 			this.running = false;
 
-			if (err) {
-				this.hooks.failed.call(err);
-			}
-
+			// 若有错误,则执行failed钩子上的回调.
+			// 可以通过compiler.hooks.failed.tap()挂载回调函数.
+			if (err) this.hooks.failed.call(err);
 			if (callback !== undefined) return callback(err, stats);
 		};
 
 		const startTime = Date.now();
-
+		// 标记开始构建
 		this.running = true;
 
+		// 定义compiler回调函数
 		const onCompiled = (err, compilation) => {
 			if (err) return finalCallback(err);
-
+			// hooks: 执行shouldEmit回调,如果返回false则不输出构建资源
 			if (this.hooks.shouldEmit.call(compilation) === false) {
+				// stats包含了本次构建中的一些数据信息
 				const stats = new Stats(compilation);
 				stats.startTime = startTime;
 				stats.endTime = Date.now();
+				// hooks: 执行done回调,并传入stats
 				this.hooks.done.callAsync(stats, err => {
 					if (err) return finalCallback(err);
 					return finalCallback(null, stats);
 				});
 				return;
 			}
-
+			// 调用compiler.emitAssets输出构建资源
 			this.emitAssets(compilation, err => {
 				if (err) return finalCallback(err);
-
+				// hooks 判断资源是否需要进一步处理
 				if (compilation.hooks.needAdditionalPass.call()) {
 					compilation.needAdditionalPass = true;
 
 					const stats = new Stats(compilation);
 					stats.startTime = startTime;
 					stats.endTime = Date.now();
+					// hooks: 执行done回调
 					this.hooks.done.callAsync(stats, err => {
 						if (err) return finalCallback(err);
-
+						// hooks: 执行additionPass回调
 						this.hooks.additionalPass.callAsync(err => {
 							if (err) return finalCallback(err);
+							// 再次compile
 							this.compile(onCompiled);
 						});
 					});
 					return;
 				}
-
+				// 输出records
 				this.emitRecords(err => {
 					if (err) return finalCallback(err);
 
 					const stats = new Stats(compilation);
 					stats.startTime = startTime;
 					stats.endTime = Date.now();
+					// hooks: 执行done回调
 					this.hooks.done.callAsync(stats, err => {
 						if (err) return finalCallback(err);
 						return finalCallback(null, stats);
@@ -273,16 +279,16 @@ class Compiler extends Tapable {
 				});
 			});
 		};
-
+		// hooks: 执行beforeRun回调
 		this.hooks.beforeRun.callAsync(this, err => {
 			if (err) return finalCallback(err);
-
+			// hooks: 执行run回调
 			this.hooks.run.callAsync(this, err => {
 				if (err) return finalCallback(err);
-
+				// 读取之前的构建记录
 				this.readRecords(err => {
 					if (err) return finalCallback(err);
-					//! 开始compile
+					//! 开始编译
 					this.compile(onCompiled);
 				});
 			});
@@ -314,59 +320,61 @@ class Compiler extends Tapable {
 			this.inputFileSystem.purge();
 		}
 	}
-
+	/** 输出构建资源 */
 	emitAssets(compilation, callback) {
 		let outputPath;
+		// 输出打包结果的方法
 		const emitFiles = err => {
 			if (err) return callback(err);
-
+			// 异步的forEach方法
 			asyncLib.forEachLimit(
 				compilation.assets,
-				15,
+				15,//最多并行15个异步任务
 				(source, file, callback) => {
 					let targetFile = file;
 					const queryStringIdx = targetFile.indexOf("?");
-					if (queryStringIdx >= 0) {
+					if (queryStringIdx >= 0)
 						targetFile = targetFile.substr(0, queryStringIdx);
-					}
 
+					// 执行写文件操作
 					const writeOut = err => {
 						if (err) return callback(err);
+						// 解析出真实的目标路径
 						const targetPath = this.outputFileSystem.join(
 							outputPath,
 							targetFile
 						);
 						// TODO webpack 5 remove futureEmitAssets option and make it on by default
 						if (this.options.output.futureEmitAssets) {
-							// check if the target file has already been written by this Compiler
+							// 检测目标文件是否已经被Compiler写入过
 							const targetFileGeneration = this._assetEmittingWrittenFiles.get(
 								targetPath
 							);
 
-							// create an cache entry for this Source if not already existing
+							// 若cacheEntry不存在,则为当前source创建一个
 							let cacheEntry = this._assetEmittingSourceCache.get(source);
 							if (cacheEntry === undefined) {
 								cacheEntry = {
 									sizeOnlySource: undefined,
 									writtenTo: new Map()
+									// 存储资源被写入的目标路径及其次数，
+									// 对应this._assetEmittingWrittenFiles 的格式
 								};
 								this._assetEmittingSourceCache.set(source, cacheEntry);
 							}
 
-							// if the target file has already been written
+							// 如果目标文件已经被写入过
 							if (targetFileGeneration !== undefined) {
-								// check if the Source has been written to this target file
+								// 检查source是否被写到了目标文件路径
 								const writtenGeneration = cacheEntry.writtenTo.get(targetPath);
 								if (writtenGeneration === targetFileGeneration) {
-									// if yes, we skip writing the file
-									// as it's already there
-									// (we assume one doesn't remove files while the Compiler is running)
+									// 如果写入过则跳过,(我们假设Compiler在running过程中文件不会被删除)
 									return callback();
 								}
 							}
 
-							// get the binary (Buffer) content from the Source
-							/** @type {Buffer} */
+
+							/** source的二进制内容 @type {Buffer} */
 							let content;
 							if (typeof source.buffer === "function") {
 								content = source.buffer();
@@ -379,20 +387,20 @@ class Compiler extends Tapable {
 								}
 							}
 
-							// Create a replacement resource which only allows to ask for size
-							// This allows to GC all memory allocated by the Source
-							// (expect when the Source is stored in any other cache)
+							// 创建一个source的代替资源，其只有一个size方法返回size属性（sizeOnlySource）
+							// 这步操作是为了让垃圾回收机制能回收由source创建的内存资源
+							// 这里是设置了output.futureEmitAssets = true时，assets的内存资源会被释放的原因
 							cacheEntry.sizeOnlySource = new SizeOnlySource(content.length);
 							compilation.assets[file] = cacheEntry.sizeOnlySource;
 
-							// Write the file to output file system
+							// 将content写到目标路径targetPath
 							this.outputFileSystem.writeFile(targetPath, content, err => {
 								if (err) return callback(err);
 
-								// information marker that the asset has been emitted
+								// 缓存source已经被写入目标路径，写入次数自增
 								compilation.emittedAssets.add(file);
 
-								// cache the information that the Source has been written to that location
+								// 将这个自增的值写入cacheEntry.writtenTo和this._assetEmittingWrittenFiles两个Map中
 								const newGeneration =
 									targetFileGeneration === undefined
 										? 1
@@ -402,22 +410,24 @@ class Compiler extends Tapable {
 								callback();
 							});
 						} else {
+							// 若资源已存在在目标路径 则跳过
 							if (source.existsAt === targetPath) {
 								source.emitted = false;
 								return callback();
 							}
+							// 获取资源内容
 							let content = source.source();
 
 							if (!Buffer.isBuffer(content)) {
 								content = Buffer.from(content, "utf8");
 							}
-
+							// 写入目标路径并标记
 							source.existsAt = targetPath;
 							source.emitted = true;
 							this.outputFileSystem.writeFile(targetPath, content, callback);
 						}
 					};
-
+					// 若目标文件路径包含"/"或"\",先创建文件夹再写入
 					if (targetFile.match(/\/|\\/)) {
 						const dir = path.dirname(targetFile);
 						this.outputFileSystem.mkdirp(
@@ -430,7 +440,7 @@ class Compiler extends Tapable {
 				},
 				err => {
 					if (err) return callback(err);
-
+					// hooks: 执行afterEmit回调
 					this.hooks.afterEmit.callAsync(compilation, err => {
 						if (err) return callback(err);
 
@@ -439,14 +449,16 @@ class Compiler extends Tapable {
 				}
 			);
 		};
-
+		// hooks: 执行emit回调
 		this.hooks.emit.callAsync(compilation, err => {
 			if (err) return callback(err);
+			// 获取输出路径
 			outputPath = compilation.getPath(this.outputPath);
+			// 递归创建输出目录,并输出资源
 			this.outputFileSystem.mkdirp(outputPath, emitFiles);
 		});
 	}
-
+	/** 输出本次构建记录 */
 	emitRecords(callback) {
 		if (!this.recordsOutputPath) return callback();
 		const idx1 = this.recordsOutputPath.lastIndexOf("/");
@@ -474,12 +486,14 @@ class Compiler extends Tapable {
 			writeFile();
 		});
 	}
-
+	/** 读取之前的构建记录(存储多次构建过程中的module标识) */
 	readRecords(callback) {
+		// 上一组records的文件路径,不存在则说明没有构建记录.
 		if (!this.recordsInputPath) {
 			this.records = {};
 			return callback();
 		}
+		// 增强版fs,读取并缓存到this.records中
 		this.inputFileSystem.stat(this.recordsInputPath, err => {
 			// It doesn't exist
 			// We can ignore this.
@@ -600,7 +614,7 @@ class Compiler extends Tapable {
 		return contextModuleFactory;
 	}
 
-	/** 构建NormalModule和COntextModule工厂实例  */
+	/** 构建创建Compilation初始参数(NormalModule和COntextModule工厂实例)  */
 	newCompilationParams() {
 		const params = {
 			normalModuleFactory: this.createNormalModuleFactory(),
@@ -609,28 +623,30 @@ class Compiler extends Tapable {
 		};
 		return params;
 	}
-	/** 开始编译 */
+	/** 正式编译 */
 	compile(callback) {
+		// 构建创建Compilation初始参数
 		const params = this.newCompilationParams();
+		// hooks: 执行beforeCompile回调
 		this.hooks.beforeCompile.callAsync(params, err => {
 			if (err) return callback(err);
-
+			// hooks: 执行compile回调
 			this.hooks.compile.call(params);
-
+			//! 创建一个新的compilation对象
 			const compilation = this.newCompilation(params);
-
+			// hooks: 执行make回调
 			this.hooks.make.callAsync(compilation, err => {
 				if (err) return callback(err);
 				// 模块处理完毕
 				compilation.finish(err => {
 					if (err) return callback(err);
-
+					// 进入封装阶段,封装完成即代表构建完成
 					compilation.seal(err => {
 						if (err) return callback(err);
-
+						// hooks: 执行afterCompile回调
 						this.hooks.afterCompile.callAsync(compilation, err => {
 							if (err) return callback(err);
-
+							// 执行run函数定义的onCompiled回调,将本次的compilation传入
 							return callback(null, compilation);
 						});
 					});
