@@ -1,0 +1,42 @@
+[
+	{
+		"path": "$ROOTPATH$/node_modules/webpack/bin/webpack.js",
+		"bookmarks": [
+			{
+				"line": 13,
+				"column": 12,
+				"label": ""
+			}
+		]
+	},
+	{
+		"path": "$ROOTPATH$/node_modules/webpack-cli/bin/cli.js",
+		"bookmarks": [
+			{
+				"line": 221,
+				"column": 18,
+				"label": ""
+			}
+		]
+	},
+	{
+		"path": "$ROOTPATH$/node_modules/webpack-sources/lib/index.js",
+		"bookmarks": [
+			{
+				"line": 12,
+				"column": 41,
+				"label": ""
+			}
+		]
+	},
+	{
+		"path": "$ROOTPATH$/node_modules/webpack/lib/webpack.js",
+		"bookmarks": [
+			{
+				"line": 5,
+				"column": 0,
+				"label": ""
+			}
+		]
+	}
+]

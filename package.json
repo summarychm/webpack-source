@@ -1,0 +1,24 @@
+{
+  "name": "webpack-source",
+  "version": "1.0.0",
+  "description": "学习webpack源码及运行机制.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/summarychm/webpack-source.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/summarychm/webpack-source/issues"
+  },
+  "homepage": "https://github.com/summarychm/webpack-source#readme",
+  "devDependencies": {
+    "webpack": "^4.32.0",
+    "webpack-cli": "^3.3.2"
+  }
+}
