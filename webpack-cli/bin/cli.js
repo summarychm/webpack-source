@@ -5,9 +5,9 @@
 根据配置参数实例化webpack对象,开始构建流程(watch/run)
 */
 
-const {NON_COMPILATION_ARGS} = require("./utils/constants");
+const { NON_COMPILATION_ARGS } = require("./utils/constants");
 
-(function () {
+(function() {
 	// wrap in IIFE to be able to use return
 
 	const importLocal = require("import-local");
@@ -20,20 +20,21 @@ const {NON_COMPILATION_ARGS} = require("./utils/constants");
 
 	const ErrorHelpers = require("./utils/errorHelpers");
 
-	const NON_COMPILATION_CMD = process.argv.find(arg => {
+	const NON_COMPILATION_CMD = process.argv.find((arg) => {
+		// 过滤掉"serve"参数
 		if (arg === "serve") {
-			global.process.argv = global.process.argv.filter(a => a !== "serve");
+			global.process.argv = global.process.argv.filter((a) => a !== "serve");
 			process.argv = global.process.argv;
 		}
-		return NON_COMPILATION_ARGS.find(a => a === arg);
+		return NON_COMPILATION_ARGS.find((a) => a === arg);
 	});
 
-	// 对于不需要构建的命令直接执行并终止执行
-	if (NON_COMPILATION_CMD)
+	// 对于不需要构建的命令直接执行并不再继续执行
+	if (NON_COMPILATION_CMD) {
 		return require("./utils/prompt-command")(NON_COMPILATION_CMD, ...process.argv);
+	}
 
-
-	// 调用yargs 处理用户的参数 
+	// 调用yargs 处理用户的参数
 	const yargs = require("yargs").usage(`webpack-cli ${require("../package.json").version}
 
 Usage: webpack-cli [options]
@@ -95,8 +96,8 @@ For more information, see https://webpack.js.org/api/cli/.`);
 		 */
 		const stdout = argv.silent
 			? {
-				write: () => {}
-			} // eslint-disable-line
+					write: () => {},
+			  } // eslint-disable-line
 			: process.stdout;
 
 		/**
@@ -118,7 +119,7 @@ For more information, see https://webpack.js.org/api/cli/.`);
 		function processOptions(options) {
 			// process Promise
 			if (typeof options.then === "function") {
-				options.then(processOptions).catch(function (err) {
+				options.then(processOptions).catch(function(err) {
 					console.error(err.stack || err);
 					process.exit(1); // eslint-disable-line
 				});
@@ -136,23 +137,23 @@ For more information, see https://webpack.js.org/api/cli/.`);
 				outputOptions = {};
 			}
 
-			ifArg("display", function (preset) {
+			ifArg("display", function(preset) {
 				outputOptions = statsPresetToOptions(preset);
 			});
 
 			outputOptions = Object.create(outputOptions);
 			if (Array.isArray(options) && !outputOptions.children) {
-				outputOptions.children = options.map(o => o.stats);
+				outputOptions.children = options.map((o) => o.stats);
 			}
 			if (typeof outputOptions.context === "undefined") outputOptions.context = firstOptions.context;
 
-			ifArg("env", function (value) {
+			ifArg("env", function(value) {
 				if (outputOptions.env) {
 					outputOptions._env = value;
 				}
 			});
 
-			ifArg("json", function (bool) {
+			ifArg("json", function(bool) {
 				if (bool) {
 					outputOptions.json = bool;
 					outputOptions.modules = bool;
@@ -161,19 +162,19 @@ For more information, see https://webpack.js.org/api/cli/.`);
 
 			if (typeof outputOptions.colors === "undefined") outputOptions.colors = require("supports-color").stdout;
 
-			ifArg("sort-modules-by", function (value) {
+			ifArg("sort-modules-by", function(value) {
 				outputOptions.modulesSort = value;
 			});
 
-			ifArg("sort-chunks-by", function (value) {
+			ifArg("sort-chunks-by", function(value) {
 				outputOptions.chunksSort = value;
 			});
 
-			ifArg("sort-assets-by", function (value) {
+			ifArg("sort-assets-by", function(value) {
 				outputOptions.assetsSort = value;
 			});
 
-			ifArg("display-exclude", function (value) {
+			ifArg("display-exclude", function(value) {
 				outputOptions.exclude = value;
 			});
 
@@ -181,7 +182,7 @@ For more information, see https://webpack.js.org/api/cli/.`);
 				if (typeof outputOptions.cached === "undefined") outputOptions.cached = false;
 				if (typeof outputOptions.cachedAssets === "undefined") outputOptions.cachedAssets = false;
 
-				ifArg("display-chunks", function (bool) {
+				ifArg("display-chunks", function(bool) {
 					if (bool) {
 						outputOptions.modules = false;
 						outputOptions.chunks = true;
@@ -189,47 +190,47 @@ For more information, see https://webpack.js.org/api/cli/.`);
 					}
 				});
 
-				ifArg("display-entrypoints", function (bool) {
+				ifArg("display-entrypoints", function(bool) {
 					outputOptions.entrypoints = bool;
 				});
 
-				ifArg("display-reasons", function (bool) {
+				ifArg("display-reasons", function(bool) {
 					if (bool) outputOptions.reasons = true;
 				});
 
-				ifArg("display-depth", function (bool) {
+				ifArg("display-depth", function(bool) {
 					if (bool) outputOptions.depth = true;
 				});
 
-				ifArg("display-used-exports", function (bool) {
+				ifArg("display-used-exports", function(bool) {
 					if (bool) outputOptions.usedExports = true;
 				});
 
-				ifArg("display-provided-exports", function (bool) {
+				ifArg("display-provided-exports", function(bool) {
 					if (bool) outputOptions.providedExports = true;
 				});
 
-				ifArg("display-optimization-bailout", function (bool) {
+				ifArg("display-optimization-bailout", function(bool) {
 					if (bool) outputOptions.optimizationBailout = bool;
 				});
 
-				ifArg("display-error-details", function (bool) {
+				ifArg("display-error-details", function(bool) {
 					if (bool) outputOptions.errorDetails = true;
 				});
 
-				ifArg("display-origins", function (bool) {
+				ifArg("display-origins", function(bool) {
 					if (bool) outputOptions.chunkOrigins = true;
 				});
 
-				ifArg("display-max-modules", function (value) {
+				ifArg("display-max-modules", function(value) {
 					outputOptions.maxModules = +value;
 				});
 
-				ifArg("display-cached", function (bool) {
+				ifArg("display-cached", function(bool) {
 					if (bool) outputOptions.cached = true;
 				});
 
-				ifArg("display-cached-assets", function (bool) {
+				ifArg("display-cached-assets", function(bool) {
 					if (bool) outputOptions.cachedAssets = true;
 				});
 
@@ -242,21 +243,20 @@ For more information, see https://webpack.js.org/api/cli/.`);
 				}
 			}
 
-			ifArg("hide-modules", function (bool) {
+			ifArg("hide-modules", function(bool) {
 				if (bool) {
 					outputOptions.modules = false;
 					outputOptions.chunkModules = false;
 				}
 			});
 
-			ifArg("info-verbosity", function (value) {
+			ifArg("info-verbosity", function(value) {
 				outputOptions.infoVerbosity = value;
 			});
 
-			ifArg("build-delimiter", function (value) {
+			ifArg("build-delimiter", function(value) {
 				outputOptions.buildDelimiter = value;
 			});
-
 
 			const webpack = require("webpack");
 
@@ -276,26 +276,26 @@ For more information, see https://webpack.js.org/api/cli/.`);
 				throw err;
 			}
 
-
-			if (argv.progress) {// 调用ProgressPlugin
+			if (argv.progress) {
+				// 调用ProgressPlugin
 				const ProgressPlugin = require("webpack").ProgressPlugin;
 				new ProgressPlugin({
-					profile: argv.profile
+					profile: argv.profile,
 				}).apply(compiler);
 			}
 			if (outputOptions.infoVerbosity === "verbose") {
 				if (argv.w) {
-					compiler.hooks.watchRun.tap("WebpackInfo", compilation => {
+					compiler.hooks.watchRun.tap("WebpackInfo", (compilation) => {
 						const compilationName = compilation.name ? compilation.name : "";
 						console.error("\nCompilation " + compilationName + " starting…\n");
 					});
 				} else {
-					compiler.hooks.beforeRun.tap("WebpackInfo", compilation => {
+					compiler.hooks.beforeRun.tap("WebpackInfo", (compilation) => {
 						const compilationName = compilation.name ? compilation.name : "";
 						console.error("\nCompilation " + compilationName + " starting…\n");
 					});
 				}
-				compiler.hooks.done.tap("WebpackInfo", compilation => {
+				compiler.hooks.done.tap("WebpackInfo", (compilation) => {
 					const compilationName = compilation.name ? compilation.name : "";
 					console.error("\nCompilation " + compilationName + " finished\n");
 				});
@@ -320,9 +320,7 @@ For more information, see https://webpack.js.org/api/cli/.`);
 						const errors = stats.compilation.errors;
 						if (errors[0].name === "EntryModuleNotFoundError") {
 							console.error("\n\u001b[1m\u001b[31mInsufficient number of arguments or no entry found.");
-							console.error(
-								"\u001b[1m\u001b[31mAlternatively, run 'webpack(-cli) --help' for usage info.\u001b[39m\u001b[22m\n"
-							);
+							console.error("\u001b[1m\u001b[31mAlternatively, run 'webpack(-cli) --help' for usage info.\u001b[39m\u001b[22m\n");
 						}
 					}
 					const statsString = stats.toString(outputOptions);
@@ -338,12 +336,7 @@ For more information, see https://webpack.js.org/api/cli/.`);
 					const SIX_DAYS = 518400000;
 					const now = new Date();
 					if (now.getDay() === MONDAY) {
-						const {
-							access,
-							constants,
-							statSync,
-							utimesSync,
-						} = require("fs");
+						const { access, constants, statSync, utimesSync } = require("fs");
 						const lastPrint = statSync(openCollectivePath).atime;
 						const lastPrintTS = new Date(lastPrint).getTime();
 						const timeSinceLastPrint = now.getTime() - lastPrintTS;
@@ -363,7 +356,7 @@ For more information, see https://webpack.js.org/api/cli/.`);
 			if (firstOptions.watch || options.watch) {
 				const watchOptions = firstOptions.watchOptions || firstOptions.watch || options.watch || {};
 				if (watchOptions.stdin) {
-					process.stdin.on("end", function (_) {
+					process.stdin.on("end", function(_) {
 						process.exit(); // eslint-disable-line
 					});
 					process.stdin.resume();
@@ -375,7 +368,7 @@ For more information, see https://webpack.js.org/api/cli/.`);
 				//! 开始构建
 				compiler.run((err, stats) => {
 					if (compiler.close) {
-						compiler.close(err2 => {
+						compiler.close((err2) => {
 							compilerCallback(err || err2, stats);
 						});
 					} else {

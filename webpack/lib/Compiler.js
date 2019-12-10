@@ -208,7 +208,7 @@ class Compiler extends Tapable {
 		this.removedFiles = new Set();
 		return new Watching(this, watchOptions, handler);
 	}
-
+	/** 开始执行构建 */
 	run(callback) {
 		// 如果编译正在进行，抛出错误（一个webpack实例不能同时进行多次编译）
 		if (this.running) return callback(new ConcurrentCompilationError());
@@ -581,11 +581,11 @@ class Compiler extends Tapable {
 	isChild() {
 		return !!this.parentCompilation;
 	}
-
+	/** 创建新的Compilation实例 */
 	createCompilation() {
 		return new Compilation(this);
 	}
-
+	/** 创建新的Compilation */
 	newCompilation(params) {
 		const compilation = this.createCompilation();
 		compilation.fileTimestamps = this.fileTimestamps;
