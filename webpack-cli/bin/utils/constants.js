@@ -5,7 +5,7 @@ const NON_COMPILATION_ARGS = [
 	"add", // 往 webpack 配置文件中增加属性
 	"remove", // 往 webpack 配置文件中删除属性
 	"serve", // 运行 webpack-serve
-	"generate-loader", // 生成 webpack loader 代码
+	"generate-loader", // 生成 webpack loader 代码 webpack-cli generate-loader
 	"generate-plugin", // 生成 webpack plugin 代码
 	"info", // 返回与本地环境相关的一些信息
 ];

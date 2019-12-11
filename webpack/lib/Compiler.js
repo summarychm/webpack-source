@@ -5,18 +5,11 @@
 "use strict";
 
 const path = require("path");
-const asyncLib = require("neo-async");// 并行执行异步任务
+const asyncLib = require("neo-async"); // 并行执行异步任务
 const util = require("util");
-const {
-	Tapable,
-	SyncHook,
-	SyncBailHook,
-	AsyncParallelHook,
-	AsyncSeriesHook
-} = require("tapable");
+const { Tapable, SyncHook, SyncBailHook, AsyncParallelHook, AsyncSeriesHook } = require("tapable");
 const parseJson = require("json-parse-better-errors");
-const {Source} = require("webpack-sources");
-
+const { Source } = require("webpack-sources");
 
 const Compilation = require("./Compilation");
 const Stats = require("./Stats");
@@ -26,7 +19,7 @@ const ContextModuleFactory = require("./ContextModuleFactory");
 const ResolverFactory = require("./ResolverFactory");
 
 const RequestShortener = require("./RequestShortener");
-const {makePathsRelative} = require("./util/identifier");
+const { makePathsRelative } = require("./util/identifier");
 const ConcurrentCompilationError = require("./ConcurrentCompilationError");
 
 /** @typedef {import("../declarations/WebpackOptions").Entry} Entry */
@@ -42,7 +35,6 @@ class Compiler extends Tapable {
 	constructor(context) {
 		super();
 		this.hooks = {
-
 			/** webpack流程全部完成 @type {AsyncSeriesHook<Stats>} */
 			done: new AsyncSeriesHook(["stats"]),
 			/**  @type {AsyncSeriesHook<>} */
@@ -97,10 +89,10 @@ class Compiler extends Tapable {
 			/** @type {SyncHook<Compiler>} */
 			afterResolvers: new SyncHook(["compiler"]),
 			/** 初始化options钩子 @type {SyncBailHook<string, Entry>} */
-			entryOption: new SyncBailHook(["context", "entry"])
+			entryOption: new SyncBailHook(["context", "entry"]),
 		};
 
-		this._pluginCompat.tap("Compiler", options => {
+		this._pluginCompat.tap("Compiler", (options) => {
 			switch (options.name) {
 				case "additional-pass":
 				case "before-run":
@@ -143,40 +135,40 @@ class Compiler extends Tapable {
 		this.resolvers = {
 			normal: {
 				plugins: util.deprecate((hook, fn) => {
-					this.resolverFactory.plugin("resolver normal", resolver => {
+					this.resolverFactory.plugin("resolver normal", (resolver) => {
 						resolver.plugin(hook, fn);
 					});
 				}, "webpack: Using compiler.resolvers.normal is deprecated.\n" + 'Use compiler.resolverFactory.plugin("resolver normal", resolver => {\n  resolver.plugin(/* … */);\n}); instead.'),
 				apply: util.deprecate((...args) => {
-					this.resolverFactory.plugin("resolver normal", resolver => {
+					this.resolverFactory.plugin("resolver normal", (resolver) => {
 						resolver.apply(...args);
 					});
-				}, "webpack: Using compiler.resolvers.normal is deprecated.\n" + 'Use compiler.resolverFactory.plugin("resolver normal", resolver => {\n  resolver.apply(/* … */);\n}); instead.')
+				}, "webpack: Using compiler.resolvers.normal is deprecated.\n" + 'Use compiler.resolverFactory.plugin("resolver normal", resolver => {\n  resolver.apply(/* … */);\n}); instead.'),
 			},
 			loader: {
 				plugins: util.deprecate((hook, fn) => {
-					this.resolverFactory.plugin("resolver loader", resolver => {
+					this.resolverFactory.plugin("resolver loader", (resolver) => {
 						resolver.plugin(hook, fn);
 					});
 				}, "webpack: Using compiler.resolvers.loader is deprecated.\n" + 'Use compiler.resolverFactory.plugin("resolver loader", resolver => {\n  resolver.plugin(/* … */);\n}); instead.'),
 				apply: util.deprecate((...args) => {
-					this.resolverFactory.plugin("resolver loader", resolver => {
+					this.resolverFactory.plugin("resolver loader", (resolver) => {
 						resolver.apply(...args);
 					});
-				}, "webpack: Using compiler.resolvers.loader is deprecated.\n" + 'Use compiler.resolverFactory.plugin("resolver loader", resolver => {\n  resolver.apply(/* … */);\n}); instead.')
+				}, "webpack: Using compiler.resolvers.loader is deprecated.\n" + 'Use compiler.resolverFactory.plugin("resolver loader", resolver => {\n  resolver.apply(/* … */);\n}); instead.'),
 			},
 			context: {
 				plugins: util.deprecate((hook, fn) => {
-					this.resolverFactory.plugin("resolver context", resolver => {
+					this.resolverFactory.plugin("resolver context", (resolver) => {
 						resolver.plugin(hook, fn);
 					});
 				}, "webpack: Using compiler.resolvers.context is deprecated.\n" + 'Use compiler.resolverFactory.plugin("resolver context", resolver => {\n  resolver.plugin(/* … */);\n}); instead.'),
 				apply: util.deprecate((...args) => {
-					this.resolverFactory.plugin("resolver context", resolver => {
+					this.resolverFactory.plugin("resolver context", (resolver) => {
 						resolver.apply(...args);
 					});
-				}, "webpack: Using compiler.resolvers.context is deprecated.\n" + 'Use compiler.resolverFactory.plugin("resolver context", resolver => {\n  resolver.apply(/* … */);\n}); instead.')
-			}
+				}, "webpack: Using compiler.resolvers.context is deprecated.\n" + 'Use compiler.resolverFactory.plugin("resolver context", resolver => {\n  resolver.apply(/* … */);\n}); instead.'),
+			},
 		};
 
 		/** @type {WebpackOptions} */
@@ -236,14 +228,14 @@ class Compiler extends Tapable {
 				stats.startTime = startTime;
 				stats.endTime = Date.now();
 				// hooks: 执行done回调,并传入stats
-				this.hooks.done.callAsync(stats, err => {
+				this.hooks.done.callAsync(stats, (err) => {
 					if (err) return finalCallback(err);
 					return finalCallback(null, stats);
 				});
 				return;
 			}
 			// 调用compiler.emitAssets输出构建资源
-			this.emitAssets(compilation, err => {
+			this.emitAssets(compilation, (err) => {
 				if (err) return finalCallback(err);
 				// hooks 判断资源是否需要进一步处理
 				if (compilation.hooks.needAdditionalPass.call()) {
@@ -253,10 +245,10 @@ class Compiler extends Tapable {
 					stats.startTime = startTime;
 					stats.endTime = Date.now();
 					// hooks: 执行done回调
-					this.hooks.done.callAsync(stats, err => {
+					this.hooks.done.callAsync(stats, (err) => {
 						if (err) return finalCallback(err);
 						// hooks: 执行additionPass回调
-						this.hooks.additionalPass.callAsync(err => {
+						this.hooks.additionalPass.callAsync((err) => {
 							if (err) return finalCallback(err);
 							// 再次compile
 							this.compile(onCompiled);
@@ -265,14 +257,14 @@ class Compiler extends Tapable {
 					return;
 				}
 				// 输出records
-				this.emitRecords(err => {
+				this.emitRecords((err) => {
 					if (err) return finalCallback(err);
 
 					const stats = new Stats(compilation);
 					stats.startTime = startTime;
 					stats.endTime = Date.now();
 					// hooks: 执行done回调
-					this.hooks.done.callAsync(stats, err => {
+					this.hooks.done.callAsync(stats, (err) => {
 						if (err) return finalCallback(err);
 						return finalCallback(null, stats);
 					});
@@ -280,13 +272,13 @@ class Compiler extends Tapable {
 			});
 		};
 		// hooks: 执行beforeRun回调
-		this.hooks.beforeRun.callAsync(this, err => {
+		this.hooks.beforeRun.callAsync(this, (err) => {
 			if (err) return finalCallback(err);
 			// hooks: 执行run回调
-			this.hooks.run.callAsync(this, err => {
+			this.hooks.run.callAsync(this, (err) => {
 				if (err) return finalCallback(err);
 				// 读取之前的构建记录
-				this.readRecords(err => {
+				this.readRecords((err) => {
 					if (err) return finalCallback(err);
 					//! 开始编译
 					this.compile(onCompiled);
@@ -304,10 +296,7 @@ class Compiler extends Tapable {
 				this.parentCompilation.assets[name] = compilation.assets[name];
 			}
 
-			const entries = Array.from(
-				compilation.entrypoints.values(),
-				ep => ep.chunks
-			).reduce((array, chunks) => {
+			const entries = Array.from(compilation.entrypoints.values(), (ep) => ep.chunks).reduce((array, chunks) => {
 				return array.concat(chunks);
 			}, []);
 
@@ -324,39 +313,33 @@ class Compiler extends Tapable {
 	emitAssets(compilation, callback) {
 		let outputPath;
 		// 输出打包结果的方法
-		const emitFiles = err => {
+		const emitFiles = (err) => {
 			if (err) return callback(err);
 			// 异步的forEach方法
 			asyncLib.forEachLimit(
 				compilation.assets,
-				15,//最多并行15个异步任务
+				15, //最多并行15个异步任务
 				(source, file, callback) => {
 					let targetFile = file;
 					const queryStringIdx = targetFile.indexOf("?");
-					if (queryStringIdx >= 0)
-						targetFile = targetFile.substr(0, queryStringIdx);
+					if (queryStringIdx >= 0) targetFile = targetFile.substr(0, queryStringIdx);
 
 					// 执行写文件操作
-					const writeOut = err => {
+					const writeOut = (err) => {
 						if (err) return callback(err);
 						// 解析出真实的目标路径
-						const targetPath = this.outputFileSystem.join(
-							outputPath,
-							targetFile
-						);
+						const targetPath = this.outputFileSystem.join(outputPath, targetFile);
 						// TODO webpack 5 remove futureEmitAssets option and make it on by default
 						if (this.options.output.futureEmitAssets) {
 							// 检测目标文件是否已经被Compiler写入过
-							const targetFileGeneration = this._assetEmittingWrittenFiles.get(
-								targetPath
-							);
+							const targetFileGeneration = this._assetEmittingWrittenFiles.get(targetPath);
 
 							// 若cacheEntry不存在,则为当前source创建一个
 							let cacheEntry = this._assetEmittingSourceCache.get(source);
 							if (cacheEntry === undefined) {
 								cacheEntry = {
 									sizeOnlySource: undefined,
-									writtenTo: new Map()
+									writtenTo: new Map(),
 									// 存储资源被写入的目标路径及其次数，
 									// 对应this._assetEmittingWrittenFiles 的格式
 								};
@@ -372,7 +355,6 @@ class Compiler extends Tapable {
 									return callback();
 								}
 							}
-
 
 							/** source的二进制内容 @type {Buffer} */
 							let content;
@@ -394,17 +376,14 @@ class Compiler extends Tapable {
 							compilation.assets[file] = cacheEntry.sizeOnlySource;
 
 							// 将content写到目标路径targetPath
-							this.outputFileSystem.writeFile(targetPath, content, err => {
+							this.outputFileSystem.writeFile(targetPath, content, (err) => {
 								if (err) return callback(err);
 
 								// 缓存source已经被写入目标路径，写入次数自增
 								compilation.emittedAssets.add(file);
 
 								// 将这个自增的值写入cacheEntry.writtenTo和this._assetEmittingWrittenFiles两个Map中
-								const newGeneration =
-									targetFileGeneration === undefined
-										? 1
-										: targetFileGeneration + 1;
+								const newGeneration = targetFileGeneration === undefined ? 1 : targetFileGeneration + 1;
 								cacheEntry.writtenTo.set(targetPath, newGeneration);
 								this._assetEmittingWrittenFiles.set(targetPath, newGeneration);
 								callback();
@@ -430,27 +409,24 @@ class Compiler extends Tapable {
 					// 若目标文件路径包含"/"或"\",先创建文件夹再写入
 					if (targetFile.match(/\/|\\/)) {
 						const dir = path.dirname(targetFile);
-						this.outputFileSystem.mkdirp(
-							this.outputFileSystem.join(outputPath, dir),
-							writeOut
-						);
+						this.outputFileSystem.mkdirp(this.outputFileSystem.join(outputPath, dir), writeOut);
 					} else {
 						writeOut();
 					}
 				},
-				err => {
+				(err) => {
 					if (err) return callback(err);
 					// hooks: 执行afterEmit回调
-					this.hooks.afterEmit.callAsync(compilation, err => {
+					this.hooks.afterEmit.callAsync(compilation, (err) => {
 						if (err) return callback(err);
 
 						return callback();
 					});
-				}
+				},
 			);
 		};
 		// hooks: 执行emit回调
-		this.hooks.emit.callAsync(compilation, err => {
+		this.hooks.emit.callAsync(compilation, (err) => {
 			if (err) return callback(err);
 			// 获取输出路径
 			outputPath = compilation.getPath(this.outputPath);
@@ -471,17 +447,13 @@ class Compiler extends Tapable {
 		}
 
 		const writeFile = () => {
-			this.outputFileSystem.writeFile(
-				this.recordsOutputPath,
-				JSON.stringify(this.records, undefined, 2),
-				callback
-			);
+			this.outputFileSystem.writeFile(this.recordsOutputPath, JSON.stringify(this.records, undefined, 2), callback);
 		};
 
 		if (!recordsOutputPathDirectory) {
 			return writeFile();
 		}
-		this.outputFileSystem.mkdirp(recordsOutputPathDirectory, err => {
+		this.outputFileSystem.mkdirp(recordsOutputPathDirectory, (err) => {
 			if (err) return callback(err);
 			writeFile();
 		});
@@ -494,7 +466,7 @@ class Compiler extends Tapable {
 			return callback();
 		}
 		// 增强版fs,读取并缓存到this.records中
-		this.inputFileSystem.stat(this.recordsInputPath, err => {
+		this.inputFileSystem.stat(this.recordsInputPath, (err) => {
 			// It doesn't exist
 			// We can ignore this.
 			if (err) return callback();
@@ -514,13 +486,7 @@ class Compiler extends Tapable {
 		});
 	}
 
-	createChildCompiler(
-		compilation,
-		compilerName,
-		compilerIndex,
-		outputOptions,
-		plugins
-	) {
+	createChildCompiler(compilation, compilerName, compilerIndex, outputOptions, plugins) {
 		const childCompiler = new Compiler(this.context);
 		if (Array.isArray(plugins)) {
 			for (const plugin of plugins) {
@@ -528,17 +494,7 @@ class Compiler extends Tapable {
 			}
 		}
 		for (const name in this.hooks) {
-			if (
-				![
-					"make",
-					"compile",
-					"emit",
-					"afterEmit",
-					"invalid",
-					"done",
-					"thisCompilation"
-				].includes(name)
-			) {
+			if (!["make", "compile", "emit", "afterEmit", "invalid", "done", "thisCompilation"].includes(name)) {
 				if (childCompiler.hooks[name]) {
 					childCompiler.hooks[name].taps = this.hooks[name].taps.slice();
 				}
@@ -569,11 +525,7 @@ class Compiler extends Tapable {
 		}
 		childCompiler.parentCompilation = compilation;
 
-		compilation.hooks.childCompiler.call(
-			childCompiler,
-			compilerName,
-			compilerIndex
-		);
+		compilation.hooks.childCompiler.call(childCompiler, compilerName, compilerIndex);
 
 		return childCompiler;
 	}
@@ -599,11 +551,7 @@ class Compiler extends Tapable {
 	}
 
 	createNormalModuleFactory() {
-		const normalModuleFactory = new NormalModuleFactory(
-			this.options.context,
-			this.resolverFactory,
-			this.options.module || {}
-		);
+		const normalModuleFactory = new NormalModuleFactory(this.options.context, this.resolverFactory, this.options.module || {});
 		this.hooks.normalModuleFactory.call(normalModuleFactory);
 		return normalModuleFactory;
 	}
@@ -614,12 +562,12 @@ class Compiler extends Tapable {
 		return contextModuleFactory;
 	}
 
-	/** 构建创建Compilation初始参数(NormalModule和COntextModule工厂实例)  */
+	/** 构建创建Compilation初始参数(新建NormalModule和ContextModule工厂实例)  */
 	newCompilationParams() {
 		const params = {
 			normalModuleFactory: this.createNormalModuleFactory(),
 			contextModuleFactory: this.createContextModuleFactory(),
-			compilationDependencies: new Set()
+			compilationDependencies: new Set(),
 		};
 		return params;
 	}
@@ -628,23 +576,23 @@ class Compiler extends Tapable {
 		// 构建创建Compilation初始参数
 		const params = this.newCompilationParams();
 		// hooks: 执行beforeCompile回调
-		this.hooks.beforeCompile.callAsync(params, err => {
+		this.hooks.beforeCompile.callAsync(params, (err) => {
 			if (err) return callback(err);
 			// hooks: 执行compile回调
 			this.hooks.compile.call(params);
 			//! 创建一个新的compilation对象
 			const compilation = this.newCompilation(params);
 			// hooks: 执行make回调
-			this.hooks.make.callAsync(compilation, err => {
+			this.hooks.make.callAsync(compilation, (err) => {
 				if (err) return callback(err);
 				// 模块处理完毕
-				compilation.finish(err => {
+				compilation.finish((err) => {
 					if (err) return callback(err);
 					// 进入封装阶段,封装完成即代表构建完成
-					compilation.seal(err => {
+					compilation.seal((err) => {
 						if (err) return callback(err);
 						// hooks: 执行afterCompile回调
-						this.hooks.afterCompile.callAsync(compilation, err => {
+						this.hooks.afterCompile.callAsync(compilation, (err) => {
 							if (err) return callback(err);
 							// 执行run函数定义的onCompiled回调,将本次的compilation传入
 							return callback(null, compilation);
@@ -665,9 +613,7 @@ class SizeOnlySource extends Source {
 	}
 
 	_error() {
-		return new Error(
-			"Content and Map of this Source is no longer available (only size() is supported)"
-		);
+		return new Error("Content and Map of this Source is no longer available (only size() is supported)");
 	}
 
 	size() {

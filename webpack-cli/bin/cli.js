@@ -101,7 +101,7 @@ For more information, see https://webpack.js.org/api/cli/.`);
 			: process.stdout;
 
 		/**
-		 * 判断指定的key用户是否通过cli传入了
+		 * 判断用户是否传入了指定key.
 		 * @param {string} name key
 		 * @param {function} fn 回调函数
 		 * @param {function} init 初始化函数
@@ -116,6 +116,9 @@ For more information, see https://webpack.js.org/api/cli/.`);
 			}
 		}
 
+		/** 生成output配置
+		 * @param {object} options
+		 */
 		function processOptions(options) {
 			// process Promise
 			if (typeof options.then === "function") {
@@ -258,11 +261,10 @@ For more information, see https://webpack.js.org/api/cli/.`);
 				outputOptions.buildDelimiter = value;
 			});
 
+			// 构建webpack和compiler对象
 			const webpack = require("webpack");
-
 			let lastHash = null;
 			let compiler;
-			// 构造compiler对象
 			try {
 				compiler = webpack(options);
 			} catch (err) {
@@ -353,6 +355,7 @@ For more information, see https://webpack.js.org/api/cli/.`);
 					process.exitCode = 2;
 				}
 			}
+			// 持续构建
 			if (firstOptions.watch || options.watch) {
 				const watchOptions = firstOptions.watchOptions || firstOptions.watch || options.watch || {};
 				if (watchOptions.stdin) {
@@ -365,7 +368,7 @@ For more information, see https://webpack.js.org/api/cli/.`);
 				compiler.watch(watchOptions, compilerCallback);
 				if (outputOptions.infoVerbosity !== "none") console.error("\nwebpack is watching the files…\n");
 			} else {
-				//! 开始构建
+				//! 单次构建
 				compiler.run((err, stats) => {
 					if (compiler.close) {
 						compiler.close((err2) => {

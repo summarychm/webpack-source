@@ -23,22 +23,21 @@ const version = require("../package.json").version;
  * @returns {Compiler | MultiCompiler} Compiler对象
  */
 const webpack = (options, callback) => {
-	const webpackOptionsValidationErrors = validateSchema(
-		webpackOptionsSchema,
-		options
-	);
+	const webpackOptionsValidationErrors = validateSchema(webpackOptionsSchema, options);
 	if (webpackOptionsValidationErrors.length) {
 		throw new WebpackOptionsValidationError(webpackOptionsValidationErrors);
 	}
-	let compiler;
-	if (Array.isArray(options)) {
-		compiler = new MultiCompiler(options.map(options => webpack(options)));
-	} else if (typeof options === "object") {
-		options = new WebpackOptionsDefaulter().process(options);
 
-		compiler = new Compiler(options.context);
+	let compiler; // 构建compiler实例
+	if (Array.isArray(options)) {
+		compiler = new MultiCompiler(options.map((options) => webpack(options)));
+	} else if (typeof options === "object") {
+		// 将config进行求值,获取最终的configObj(如计算函数属性)
+		options = new WebpackOptionsDefaulter().process(options);
+		compiler = new Compiler(options.context); // 创建compiler独享
 		compiler.options = options;
-		new NodeEnvironmentPlugin().apply(compiler);
+		new NodeEnvironmentPlugin().apply(compiler); // 清理构建缓存
+		// 注入用户自定义plugin
 		if (options.plugins && Array.isArray(options.plugins)) {
 			for (const plugin of options.plugins) {
 				if (typeof plugin === "function") {
@@ -48,28 +47,24 @@ const webpack = (options, callback) => {
 				}
 			}
 		}
-		// 触发environmentHooks回调
 		compiler.hooks.environment.call();
 		compiler.hooks.afterEnvironment.call();
-		// 注入webpack内部插件
+
+		// 将options配置转换为webpack内部插件
 		compiler.options = new WebpackOptionsApply().process(options, compiler);
 	} else {
 		throw new Error("Invalid argument: options");
 	}
+	// 执行编译完成回调
 	if (callback) {
 		if (typeof callback !== "function") {
 			throw new Error("Invalid argument: callback");
 		}
-		if (
-			options.watch === true ||
-			(Array.isArray(options) && options.some(o => o.watch))
-		) {
-			const watchOptions = Array.isArray(options)
-				? options.map(o => o.watchOptions || {})
-				: options.watchOptions || {};
+		if (options.watch === true || (Array.isArray(options) && options.some((o) => o.watch))) {
+			const watchOptions = Array.isArray(options) ? options.map((o) => o.watchOptions || {}) : options.watchOptions || {};
 			return compiler.watch(watchOptions, callback);
 		}
-		compiler.run(callback);
+		compiler.run(callback); //! 开始run
 	}
 	return compiler;
 };
@@ -92,7 +87,7 @@ const exportPlugins = (obj, mappings) => {
 		Object.defineProperty(obj, name, {
 			configurable: false,
 			enumerable: true,
-			get: mappings[name]
+			get: mappings[name],
 		});
 	}
 };
@@ -124,8 +119,7 @@ exportPlugins(exports, {
 	NamedChunksPlugin: () => require("./NamedChunksPlugin"),
 	NamedModulesPlugin: () => require("./NamedModulesPlugin"),
 	NoEmitOnErrorsPlugin: () => require("./NoEmitOnErrorsPlugin"),
-	NormalModuleReplacementPlugin: () =>
-		require("./NormalModuleReplacementPlugin"),
+	NormalModuleReplacementPlugin: () => require("./NormalModuleReplacementPlugin"),
 	PrefetchPlugin: () => require("./PrefetchPlugin"),
 	ProgressPlugin: () => require("./ProgressPlugin"),
 	ProvidePlugin: () => require("./ProvidePlugin"),
@@ -135,48 +129,41 @@ exportPlugins(exports, {
 	Stats: () => require("./Stats"),
 	Template: () => require("./Template"),
 	UmdMainTemplatePlugin: () => require("./UmdMainTemplatePlugin"),
-	WatchIgnorePlugin: () => require("./WatchIgnorePlugin")
+	WatchIgnorePlugin: () => require("./WatchIgnorePlugin"),
 });
 exportPlugins((exports.dependencies = {}), {
-	DependencyReference: () => require("./dependencies/DependencyReference")
+	DependencyReference: () => require("./dependencies/DependencyReference"),
 });
 exportPlugins((exports.optimize = {}), {
 	AggressiveMergingPlugin: () => require("./optimize/AggressiveMergingPlugin"),
-	AggressiveSplittingPlugin: () =>
-		require("./optimize/AggressiveSplittingPlugin"),
-	ChunkModuleIdRangePlugin: () =>
-		require("./optimize/ChunkModuleIdRangePlugin"),
+	AggressiveSplittingPlugin: () => require("./optimize/AggressiveSplittingPlugin"),
+	ChunkModuleIdRangePlugin: () => require("./optimize/ChunkModuleIdRangePlugin"),
 	LimitChunkCountPlugin: () => require("./optimize/LimitChunkCountPlugin"),
 	MinChunkSizePlugin: () => require("./optimize/MinChunkSizePlugin"),
-	ModuleConcatenationPlugin: () =>
-		require("./optimize/ModuleConcatenationPlugin"),
+	ModuleConcatenationPlugin: () => require("./optimize/ModuleConcatenationPlugin"),
 	OccurrenceOrderPlugin: () => require("./optimize/OccurrenceOrderPlugin"),
-	OccurrenceModuleOrderPlugin: () =>
-		require("./optimize/OccurrenceModuleOrderPlugin"),
-	OccurrenceChunkOrderPlugin: () =>
-		require("./optimize/OccurrenceChunkOrderPlugin"),
+	OccurrenceModuleOrderPlugin: () => require("./optimize/OccurrenceModuleOrderPlugin"),
+	OccurrenceChunkOrderPlugin: () => require("./optimize/OccurrenceChunkOrderPlugin"),
 	RuntimeChunkPlugin: () => require("./optimize/RuntimeChunkPlugin"),
 	SideEffectsFlagPlugin: () => require("./optimize/SideEffectsFlagPlugin"),
-	SplitChunksPlugin: () => require("./optimize/SplitChunksPlugin")
+	SplitChunksPlugin: () => require("./optimize/SplitChunksPlugin"),
 });
 exportPlugins((exports.web = {}), {
-	FetchCompileWasmTemplatePlugin: () =>
-		require("./web/FetchCompileWasmTemplatePlugin"),
-	JsonpTemplatePlugin: () => require("./web/JsonpTemplatePlugin")
+	FetchCompileWasmTemplatePlugin: () => require("./web/FetchCompileWasmTemplatePlugin"),
+	JsonpTemplatePlugin: () => require("./web/JsonpTemplatePlugin"),
 });
 exportPlugins((exports.webworker = {}), {
-	WebWorkerTemplatePlugin: () => require("./webworker/WebWorkerTemplatePlugin")
+	WebWorkerTemplatePlugin: () => require("./webworker/WebWorkerTemplatePlugin"),
 });
 exportPlugins((exports.node = {}), {
 	NodeTemplatePlugin: () => require("./node/NodeTemplatePlugin"),
-	ReadFileCompileWasmTemplatePlugin: () =>
-		require("./node/ReadFileCompileWasmTemplatePlugin")
+	ReadFileCompileWasmTemplatePlugin: () => require("./node/ReadFileCompileWasmTemplatePlugin"),
 });
 exportPlugins((exports.debug = {}), {
-	ProfilingPlugin: () => require("./debug/ProfilingPlugin")
+	ProfilingPlugin: () => require("./debug/ProfilingPlugin"),
 });
 exportPlugins((exports.util = {}), {
-	createHash: () => require("./util/createHash")
+	createHash: () => require("./util/createHash"),
 });
 
 const defineMissingPluginError = (namespace, pluginName, errorMessage) => {
@@ -185,20 +172,12 @@ const defineMissingPluginError = (namespace, pluginName, errorMessage) => {
 		enumerable: true,
 		get() {
 			throw new RemovedPluginError(errorMessage);
-		}
+		},
 	});
 };
 
 // TODO remove in webpack 5
-defineMissingPluginError(
-	exports.optimize,
-	"UglifyJsPlugin",
-	"webpack.optimize.UglifyJsPlugin has been removed, please use config.optimization.minimize instead."
-);
+defineMissingPluginError(exports.optimize, "UglifyJsPlugin", "webpack.optimize.UglifyJsPlugin has been removed, please use config.optimization.minimize instead.");
 
 // TODO remove in webpack 5
-defineMissingPluginError(
-	exports.optimize,
-	"CommonsChunkPlugin",
-	"webpack.optimize.CommonsChunkPlugin has been removed, please use config.optimization.splitChunks instead."
-);
+defineMissingPluginError(exports.optimize, "CommonsChunkPlugin", "webpack.optimize.CommonsChunkPlugin has been removed, please use config.optimization.splitChunks instead.");

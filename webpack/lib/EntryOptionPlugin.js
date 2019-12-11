@@ -25,6 +25,7 @@ const itemToPlugin = (context, item, name) => {
 	return new SingleEntryPlugin(context, item, name);
 };
 
+/** 处理options.entry配置,支持{string/object/function} */
 module.exports = class EntryOptionPlugin {
 	/**
 	 * @param {Compiler} compiler the compiler instance one is tapping into
