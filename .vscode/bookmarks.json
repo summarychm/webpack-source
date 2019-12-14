@@ -38,5 +38,35 @@
 				"label": ""
 			}
 		]
+	},
+	{
+		"path": "$ROOTPATH$/webpack/lib/Compiler.js",
+		"bookmarks": [
+			{
+				"line": 13,
+				"column": 19,
+				"label": ""
+			}
+		]
+	},
+	{
+		"path": "$ROOTPATH$/webpack/lib/Compilation.js",
+		"bookmarks": [
+			{
+				"line": 158,
+				"column": 3,
+				"label": ""
+			}
+		]
+	},
+	{
+		"path": "$ROOTPATH$/loader-runner/lib/LoaderRunner.js",
+		"bookmarks": [
+			{
+				"line": 167,
+				"column": 71,
+				"label": ""
+			}
+		]
 	}
 ]
